@@ -122,7 +122,7 @@ func (client *Client) writePump() {
 				return
 			}
 
-			w, err := client.conn.NextWriter(websocket.BinaryMessage)
+			w, err := client.conn.NextWriter(websocket.TextMessage)
 
 			if err != nil {
 				return
