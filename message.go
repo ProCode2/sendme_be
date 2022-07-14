@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	SENDMESSAGEACTION = "send-message"
-	JOINROOMACTION    = "join-room"
-	LEAVEROOMACTION   = "leave-room"
+	SENDMESSAGEACTION      = "send-message"
+	JOINROOMACTION         = "join-room"
+	LEAVEROOMACTION        = "leave-room"
+	NOTIFYOTHERUSERJOINING = "other-user-joined"
 )
 
 type Message struct {

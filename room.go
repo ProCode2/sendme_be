@@ -1,7 +1,9 @@
 package main
 
+import "github.com/google/uuid"
+
 type Room struct {
-	name       string
+	id         uuid.UUID
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
@@ -11,7 +13,7 @@ type Room struct {
 // NewRoom creates a new Room
 func NewRoom(name string) *Room {
 	return &Room{
-		name:       name,
+		id:         uuid.New(),
 		clients:    map[*Client]bool{},
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
@@ -19,8 +21,8 @@ func NewRoom(name string) *Room {
 	}
 }
 
-func (room *Room) GetName() string {
-	return room.name
+func (room *Room) GetId() string {
+	return room.id.String()
 }
 
 // RunRoom runs our room, accepting various requests
@@ -54,8 +56,8 @@ func (room *Room) broadcastToClientsInRoom(message []byte) {
 
 func (room *Room) notifyClientJoined(client *Client) {
 	message := &Message{
-		Action:  SENDMESSAGEACTION,
-		Target:  room.name,
+		Action:  NOTIFYOTHERUSERJOINING,
+		Target:  room.id.String(),
 		Message: "Successfully Joined The Room",
 	}
 

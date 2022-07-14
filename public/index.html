@@ -5,15 +5,22 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+  </style>
   <title>SendMe</title>
 </head>
 
 <body>
   <input id="file-uploader" type="file" placeholder="upload a file" />
   <button onclick="handleClick(event)">channel</button>
+
+  <input id="join-room" type="text" placeholder="join a room" />
+  <button onclick="handleJoin(event)">channel</button>
+  <div class="roomid"></div>
 </body>
 <script>
   let ws = new WebSocket("ws://localhost:8080/ws")
+  var room;
 
   // VVVIIPPPPPP
   const downloadFile = (base64String, fileName) => {
@@ -31,18 +38,9 @@
     // // in case the Blob uses a lot of memory
     // setTimeout(() => URL.revokeObjectURL(link.href), 7000);
   };
-  let room = (Math.ceil(Math.random() * 100)).toString()
 
   ws.onopen = (e) => {
     console.log("connected")
-    // create a room
-    console.log(room)
-    ws.send(JSON.stringify({
-      action: "join-room",
-      message: room,
-      target: "",
-      sender: null
-    }))
   }
   ws.addEventListener("message", (e) => {
     // console.log(e)
@@ -59,6 +57,15 @@
         break
       case "leave-room":
         console.log("Left the room")
+        break
+      case "created-room":
+        console.log("Created room")
+        console.log(data)
+        room = data.message
+        document.querySelector(".roomid").innerHTML = data.message
+        break
+      case "other-user-joined":
+        console.log(`Someone connected to this network`)
         break
       default:
         console.log(data)
@@ -96,6 +103,17 @@
 
   const handleClick = (e) => {
     uploadFile()
+  }
+
+  const handleJoin = (e) => {
+    room = document.querySelector("#join-room").value;
+
+    ws.send(JSON.stringify({
+      action: "join-room",
+      message: room,
+      target: "",
+      sender: null
+    }))
   }
 </script>
 

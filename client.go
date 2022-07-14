@@ -91,6 +91,7 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 func (client *Client) readPump() {
 	defer func() {
 		client.disconnect()
+		log.Println("client disconnected")
 	}()
 
 	client.conn.SetReadLimit(maxMessageSize)
@@ -168,9 +169,9 @@ func (client *Client) handleNewMessages(jsonMessage []byte) {
 	case SENDMESSAGEACTION:
 		// The send-message action, this will send messages to a specific room now.
 		// Which room wil depend on the message Target
-		roomName := message.Target
+		roomId := message.Target
 		// the room can be found in the ChatServer map of rooms
-		if room := client.wsServer.findRoomByName(roomName); room != nil {
+		if room := client.wsServer.findRoomById(roomId); room != nil {
 			room.broadcast <- &message
 		}
 	case JOINROOMACTION:
@@ -181,11 +182,12 @@ func (client *Client) handleNewMessages(jsonMessage []byte) {
 }
 
 func (client *Client) handleJoinRoomMessage(message Message) {
-	roomName := message.Message
+	roomId := message.Message
 
-	room := client.wsServer.findRoomByName(roomName)
+	room := client.wsServer.findRoomById(roomId)
 	if room == nil {
-		room = client.wsServer.createRoom(roomName)
+		// room = client.wsServer.createRoom(roomName)
+		return
 	}
 
 	client.rooms[room] = true
@@ -194,7 +196,7 @@ func (client *Client) handleJoinRoomMessage(message Message) {
 }
 
 func (client *Client) handleLeaveRoomMessage(message Message) {
-	room := client.wsServer.findRoomByName(message.Message)
+	room := client.wsServer.findRoomById(message.Message)
 	if _, ok := client.rooms[room]; ok {
 		delete(client.rooms, room)
 	}

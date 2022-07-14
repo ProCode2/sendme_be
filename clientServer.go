@@ -42,6 +42,15 @@ func (server *WsServer) boradcastToClients(message []byte) {
 
 func (server *WsServer) registerClient(client *Client) {
 	server.clients[client] = true
+	newRoom := server.createRoom("")
+	newRoom.register <- client
+	msg := &Message{
+		Action:  "created-room",
+		Message: newRoom.GetId(),
+		Target:  "",
+		Sender:  nil,
+	}
+	client.send <- msg.encode()
 }
 
 func (server *WsServer) unregisterClient(client *Client) {
@@ -50,10 +59,10 @@ func (server *WsServer) unregisterClient(client *Client) {
 
 }
 
-func (server *WsServer) findRoomByName(name string) *Room {
+func (server *WsServer) findRoomById(id string) *Room {
 	var foundRoom *Room
 	for room := range server.rooms {
-		if room.GetName() == name {
+		if room.id.String() == id {
 			foundRoom = room
 			break
 		}
@@ -62,8 +71,8 @@ func (server *WsServer) findRoomByName(name string) *Room {
 	return foundRoom
 }
 
-func (server *WsServer) createRoom(name string) *Room {
-	room := NewRoom(name)
+func (server *WsServer) createRoom(id string) *Room {
+	room := NewRoom(id)
 	go room.RunRoom()
 	server.rooms[room] = true
 
