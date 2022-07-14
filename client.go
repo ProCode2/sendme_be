@@ -68,8 +68,10 @@ func (client *Client) disconnect() {
 // ServeWs handles websocket requests from client requests
 func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
+
+	// STOP SCROLLING LOOK AT ME YOU IDIOT REFACTOR ME!!
 	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
+		return true // going easy on ya now ;)
 	}
 
 	if err != nil {
