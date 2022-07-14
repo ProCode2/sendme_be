@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -43,6 +44,7 @@ type Client struct {
 	conn     *websocket.Conn
 	wsServer *WsServer
 	send     chan []byte
+	rooms    map[*Room]bool // keep track of rooms a client joins
 }
 
 func newClient(conn *websocket.Conn, wsServer *WsServer) *Client {
@@ -50,11 +52,15 @@ func newClient(conn *websocket.Conn, wsServer *WsServer) *Client {
 		conn:     conn,
 		wsServer: wsServer,
 		send:     make(chan []byte, 256),
+		rooms:    map[*Room]bool{},
 	}
 }
 
 func (client *Client) disconnect() {
 	client.wsServer.unregister <- client
+	for room := range client.rooms {
+		room.unregister <- client
+	}
 	close(client.send)
 	client.conn.Close()
 }
@@ -101,7 +107,7 @@ func (client *Client) readPump() {
 			break
 		}
 
-		client.wsServer.broadcast <- msg
+		client.handleNewMessages(msg)
 	}
 }
 
@@ -146,4 +152,52 @@ func (client *Client) writePump() {
 			}
 		}
 	}
+}
+
+func (client *Client) handleNewMessages(jsonMessage []byte) {
+	var message Message
+
+	if err := json.Unmarshal(jsonMessage, &message); err != nil {
+		log.Printf("Error on unmarshal JSON message: &s", err)
+	}
+
+	// make the current client the sender of this message
+	message.Sender = client
+
+	switch message.Action {
+	case SENDMESSAGEACTION:
+		// The send-message action, this will send messages to a specific room now.
+		// Which room wil depend on the message Target
+		roomName := message.Target
+		// the room can be found in the ChatServer map of rooms
+		if room := client.wsServer.findRoomByName(roomName); room != nil {
+			room.broadcast <- &message
+		}
+	case JOINROOMACTION:
+		client.handleJoinRoomMessage(message)
+	case LEAVEROOMACTION:
+		client.handleLeaveRoomMessage(message)
+	}
+}
+
+func (client *Client) handleJoinRoomMessage(message Message) {
+	roomName := message.Message
+
+	room := client.wsServer.findRoomByName(roomName)
+	if room == nil {
+		room = client.wsServer.createRoom(roomName)
+	}
+
+	client.rooms[room] = true
+
+	room.register <- client
+}
+
+func (client *Client) handleLeaveRoomMessage(message Message) {
+	room := client.wsServer.findRoomByName(message.Message)
+	if _, ok := client.rooms[room]; ok {
+		delete(client.rooms, room)
+	}
+
+	room.unregister <- client
 }

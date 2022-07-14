@@ -15,6 +15,7 @@
 <script>
   let ws = new WebSocket("ws://localhost:8080/ws")
 
+  // VVVIIPPPPPP
   const downloadFile = (base64String, fileName) => {
     const link = document.createElement('a');
     // create a blobURI pointing to our Blob
@@ -30,18 +31,42 @@
     // // in case the Blob uses a lot of memory
     // setTimeout(() => URL.revokeObjectURL(link.href), 7000);
   };
+  let room = (Math.ceil(Math.random() * 100)).toString()
 
   ws.onopen = (e) => {
     console.log("connected")
+    // create a room
+    console.log(room)
+    ws.send(JSON.stringify({
+      action: "join-room",
+      message: room,
+      target: "",
+      sender: null
+    }))
   }
   ws.addEventListener("message", (e) => {
     // console.log(e)
     let data = JSON.parse(e.data)
-    // console.log(data)
-    downloadFile(data.data, "a.pdf")
-
+    switch (data.action) {
+      case "join-room":
+        console.log("joined a room")
+        console.log(data)
+        break
+      case "send-message":
+        console.log("send-message")
+        console.log(data);
+        downloadFile(data.message, "a.pdf")
+        break
+      case "leave-room":
+        console.log("Left the room")
+        break
+      default:
+        console.log(data)
+    }
   })
 
+
+  // VVVVIIIIIPPP
   function uploadFile() {
     let file = document.querySelector("#file-uploader").files[0];
 
@@ -57,12 +82,12 @@
     var rawData = new ArrayBuffer();
 
     reader.onloadend = function (e) {
-      console.log(reader.result)
+      // console.log(reader.result)
       ws.send(JSON.stringify({
-        action: "join-room",
-        data: reader.result,
-        target: "room-name",
-        sender: "hiii"
+        action: "send-message",
+        message: reader.result,
+        target: room,
+        sender: null
       }))
     }
 
