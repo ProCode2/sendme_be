@@ -1,38 +1,27 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{}
+var addr = flag.String("addr", ":8080", "http server address")
 
 func main() {
+	flag.Parse()
+
+	wsServer := NewWebsocketServer()
+
+	// run websocket server in a go routine
+	go wsServer.Run()
+
+	fs := http.FileServer(http.Dir("./public"))
+	http.Handle("/", fs)
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		// Upgrade upgrades the HTTP server connection to the WebSocket protocol.
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Print("upgrade failed: ", err)
-			return
-		}
-		defer conn.Close()
-
-		conn.WriteMessage(websocket.TextMessage, []byte("voila"))
-
-		for {
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			log.Println(string(msg))
-		}
-
+		ServeWs(wsServer, w, r)
 	})
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "websockets.html")
-	})
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }

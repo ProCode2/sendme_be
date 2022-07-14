@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SendMe</title>
+</head>
+
+<body>
+  <input id="file-uploader" type="file" placeholder="upload a file" />
+  <button onclick="handleClick(event)">channel</button>
+</body>
+<script>
+  let ws = new WebSocket("ws://localhost:8080/ws")
+
+  const downloadFile = (blob, fileName) => {
+    const link = document.createElement('a');
+    // create a blobURI pointing to our Blob
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.innerText = "Ready!"
+    // some browser needs the anchor to be in the doc
+    document.body.append(link);
+    // link.click();
+    // link.remove();
+    // // in case the Blob uses a lot of memory
+    // setTimeout(() => URL.revokeObjectURL(link.href), 7000);
+  };
+
+  ws.onopen = (e) => {
+    console.log("connected")
+  }
+  ws.addEventListener("message", (e) => {
+    console.log(e)
+    let url = URL.createObjectURL(e.data)
+    console.log(url)
+    downloadFile(e.data, "a.pdf")
+
+  })
+
+  function uploadFile() {
+    let file = document.querySelector("#file-uploader").files[0];
+
+    if (!file) {
+      return
+    }
+    if (file.size > 10000000) {
+      alert('File should be smaller than 1MB')
+      return
+    }
+
+    var reader = new FileReader();
+    var rawData = new ArrayBuffer();
+
+    reader.onload = function (e) {
+      rawData = e.target.result;
+      ws.send(rawData);
+      alert("the File has been transferred.")
+    }
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  const handleClick = (e) => {
+    uploadFile()
+  }
+</script>
+
+</html>
