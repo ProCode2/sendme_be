@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -172,6 +173,8 @@ func (client *Client) handleNewMessages(jsonMessage []byte) {
 		// The send-message action, this will send messages to a specific room now.
 		// Which room wil depend on the message Target
 		roomId := message.Target
+		// add an id to the message
+		message.Message.Id = uuid.New()
 		// the room can be found in the ChatServer map of rooms
 		if room := client.wsServer.findRoomById(roomId); room != nil {
 			room.broadcast <- &message
@@ -180,11 +183,13 @@ func (client *Client) handleNewMessages(jsonMessage []byte) {
 		client.handleJoinRoomMessage(message)
 	case LEAVEROOMACTION:
 		client.handleLeaveRoomMessage(message)
+	case CREATEROOMANDSENDID:
+		client.handleCreateRoomAndSendId(message)
 	}
 }
 
 func (client *Client) handleJoinRoomMessage(message Message) {
-	roomId := message.Message
+	roomId := message.Message.Data
 
 	room := client.wsServer.findRoomById(roomId)
 	if room == nil {
@@ -198,10 +203,26 @@ func (client *Client) handleJoinRoomMessage(message Message) {
 }
 
 func (client *Client) handleLeaveRoomMessage(message Message) {
-	room := client.wsServer.findRoomById(message.Message)
+	room := client.wsServer.findRoomById(message.Message.Data)
 	if _, ok := client.rooms[room]; ok {
 		delete(client.rooms, room)
 	}
 
 	room.unregister <- client
+}
+
+func (client *Client) handleCreateRoomAndSendId(message Message) {
+	newRoom := client.wsServer.createRoom()
+	newRoom.register <- client
+	client.rooms[newRoom] = true
+	msg := &Message{
+		Action: "created-room",
+		Message: &MessageData{
+			MessageType: "message",
+			Data:        newRoom.GetId(),
+		},
+		Target: "",
+		Sender: nil,
+	}
+	client.send <- msg.encode()
 }

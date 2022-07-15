@@ -11,7 +11,7 @@ type Room struct {
 }
 
 // NewRoom creates a new Room
-func NewRoom(name string) *Room {
+func NewRoom() *Room {
 	return &Room{
 		id:         uuid.New(),
 		clients:    map[*Client]bool{},
@@ -56,9 +56,12 @@ func (room *Room) broadcastToClientsInRoom(message []byte) {
 
 func (room *Room) notifyClientJoined(client *Client) {
 	message := &Message{
-		Action:  NOTIFYOTHERUSERJOINING,
-		Target:  room.id.String(),
-		Message: "Successfully Joined The Room",
+		Action: NOTIFYOTHERUSERJOINING,
+		Target: room.id.String(),
+		Message: &MessageData{
+			MessageType: "message",
+			Data:        "Other client joined successfully",
+		},
 	}
 
 	room.broadcastToClientsInRoom(message.encode())
