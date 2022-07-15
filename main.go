@@ -1,16 +1,20 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
-var addr = flag.String("addr", ":8080", "http server address")
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
 
 func main() {
-	flag.Parse()
-
+	port := ":" + getEnv("PORT", "8080")
 	wsServer := NewWebsocketServer()
 
 	// run websocket server in a go routine
@@ -23,5 +27,5 @@ func main() {
 		ServeWs(wsServer, w, r)
 	})
 
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	log.Fatal(http.ListenAndServe(port, nil))
 }

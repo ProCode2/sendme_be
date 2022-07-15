@@ -2,119 +2,17 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-  </style>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SendMe</title>
+  <script type="module" crossorigin src="/assets/index.c23fc6fd.js"></script>
+  <link rel="stylesheet" href="/assets/index.37b885f7.css">
 </head>
 
 <body>
-  <input id="file-uploader" type="file" placeholder="upload a file" />
-  <button onclick="handleClick(event)">channel</button>
-
-  <input id="join-room" type="text" placeholder="join a room" />
-  <button onclick="handleJoin(event)">channel</button>
-  <div class="roomid"></div>
+  <div id="root"></div>
+  
 </body>
-<script>
-  let ws = new WebSocket("ws://localhost:8080/ws")
-  var room;
-
-  // VVVIIPPPPPP
-  const downloadFile = (base64String, fileName) => {
-    const link = document.createElement('a');
-    // create a blobURI pointing to our Blob
-    link.href = base64String;
-    // link.download = fileName;
-    const img = document.createElement("img")
-    img.src = base64String
-    link.appendChild(img)
-    // some browser needs the anchor to be in the doc
-    document.body.append(link);
-    // link.click();
-    // link.remove();
-    // // in case the Blob uses a lot of memory
-    // setTimeout(() => URL.revokeObjectURL(link.href), 7000);
-  };
-
-  ws.onopen = (e) => {
-    console.log("connected")
-  }
-  ws.addEventListener("message", (e) => {
-    // console.log(e)
-    let data = JSON.parse(e.data)
-    switch (data.action) {
-      case "join-room":
-        console.log("joined a room")
-        console.log(data)
-        break
-      case "send-message":
-        console.log("send-message")
-        console.log(data);
-        downloadFile(data.message, "a.pdf")
-        break
-      case "leave-room":
-        console.log("Left the room")
-        break
-      case "created-room":
-        console.log("Created room")
-        console.log(data)
-        room = data.message
-        document.querySelector(".roomid").innerHTML = data.message
-        break
-      case "other-user-joined":
-        console.log(`Someone connected to this network`)
-        break
-      default:
-        console.log(data)
-    }
-  })
-
-
-  // VVVVIIIIIPPP
-  function uploadFile() {
-    let file = document.querySelector("#file-uploader").files[0];
-
-    if (!file) {
-      return
-    }
-    if (file.size > 10000000) {
-      alert('File should be smaller than 1MB')
-      return
-    }
-
-    var reader = new FileReader();
-    var rawData = new ArrayBuffer();
-
-    reader.onloadend = function (e) {
-      // console.log(reader.result)
-      ws.send(JSON.stringify({
-        action: "send-message",
-        message: reader.result,
-        target: room,
-        sender: null
-      }))
-    }
-
-    reader.readAsDataURL(file);
-  }
-
-  const handleClick = (e) => {
-    uploadFile()
-  }
-
-  const handleJoin = (e) => {
-    room = document.querySelector("#join-room").value;
-
-    ws.send(JSON.stringify({
-      action: "join-room",
-      message: room,
-      target: "",
-      sender: null
-    }))
-  }
-</script>
 
 </html>
